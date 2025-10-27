@@ -43,7 +43,7 @@ export default function MessageBubble({ message, avatar }: MessageBubbleProps) {
 const styles = StyleSheet.create({
   messageRow: {
     flexDirection: 'row',
-    marginVertical: 4,
+    marginVertical: 6,
     paddingHorizontal: 16,
     alignItems: 'flex-start',
   },
@@ -54,19 +54,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 10,
     marginTop: 4,
     backgroundColor: colors.accent,
   },
   avatarPlaceholder: {
-    width: 32,
-    marginLeft: 8,
+    width: 48,
+    marginLeft: 10,
   },
   container: {
-    maxWidth: '75%',
+    maxWidth: '70%',
   },
   userContainer: {
     alignItems: 'flex-end',

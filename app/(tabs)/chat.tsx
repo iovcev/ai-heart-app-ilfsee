@@ -415,9 +415,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.accent,
   },
   emptyScrollView: {
@@ -431,9 +431,9 @@ const styles = StyleSheet.create({
     paddingBottom: 200,
   },
   largeAvatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     marginBottom: 20,
     backgroundColor: colors.accent,
   },

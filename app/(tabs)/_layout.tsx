@@ -1,11 +1,12 @@
+
 import React from 'react';
 import { Platform } from 'react-native';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { Stack } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
-  // Define the tabs configuration
   const tabs: TabBarItem[] = [
     {
       name: '(home)',
@@ -14,14 +15,19 @@ export default function TabLayout() {
       label: 'Home',
     },
     {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person.fill',
-      label: 'Profile',
+      name: 'chat',
+      route: '/(tabs)/chat',
+      icon: 'bubble.left.and.bubble.right.fill',
+      label: 'Chat',
+    },
+    {
+      name: 'settings',
+      route: '/(tabs)/settings',
+      icon: 'gear',
+      label: 'Settings',
     },
   ];
 
-  // Use NativeTabs for iOS, custom FloatingTabBar for Android and Web
   if (Platform.OS === 'ios') {
     return (
       <NativeTabs>
@@ -29,25 +35,29 @@ export default function TabLayout() {
           <Icon sf="house.fill" drawable="ic_home" />
           <Label>Home</Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="profile">
-          <Icon sf="person.fill" drawable="ic_profile" />
-          <Label>Profile</Label>
+        <NativeTabs.Trigger name="chat">
+          <Icon sf="bubble.left.and.bubble.right.fill" drawable="ic_chat" />
+          <Label>Chat</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf="gear" drawable="ic_settings" />
+          <Label>Settings</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
   }
 
-  // For Android and Web, use Stack navigation with custom floating tab bar
   return (
     <>
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'none', // Remove fade animation to prevent black screen flash
+          animation: 'none',
         }}
       >
         <Stack.Screen name="(home)" />
-        <Stack.Screen name="profile" />
+        <Stack.Screen name="chat" />
+        <Stack.Screen name="settings" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>

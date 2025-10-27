@@ -53,7 +53,7 @@ export default function ChatScreen() {
 
   const handleSend = async (textToSend?: string) => {
     const messageText = textToSend || inputText.trim();
-    console.log('Send button pressed, input:', messageText);
+    console.log('handleSend called with text:', messageText);
     
     if (!messageText) {
       console.log('Empty input, ignoring');
@@ -86,10 +86,13 @@ export default function ChatScreen() {
       timestamp: new Date(),
     };
 
-    addMessage(userMessage);
+    // Clear input immediately
     setInputText('');
     setIsSending(true);
     setIsTyping(true);
+
+    // Add user message
+    addMessage(userMessage);
 
     try {
       // Build conversation history for context
@@ -202,6 +205,13 @@ export default function ChatScreen() {
     if (prompt) {
       console.log('Sending quick action prompt:', prompt);
       handleSend(prompt);
+    }
+  };
+
+  const handleSendPress = () => {
+    console.log('Send button pressed');
+    if (inputText.trim() && !isSending) {
+      handleSend();
     }
   };
 
@@ -341,15 +351,13 @@ export default function ChatScreen() {
               multiline
               maxLength={500}
               editable={!isSending}
-              onSubmitEditing={() => {
-                if (inputText.trim() && !isSending) {
-                  handleSend();
-                }
-              }}
+              returnKeyType="send"
+              blurOnSubmit={false}
+              onSubmitEditing={handleSendPress}
             />
             <TouchableOpacity
               style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
-              onPress={() => handleSend()}
+              onPress={handleSendPress}
               disabled={!inputText.trim() || isSending}
             >
               {isSending ? (

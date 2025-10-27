@@ -14,7 +14,9 @@ export function useApiKey() {
 
   const loadApiKey = async () => {
     try {
+      console.log('Loading API key from storage...');
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      console.log('API key loaded:', stored ? 'Found' : 'Not found');
       if (stored) {
         setApiKey(stored);
       }
@@ -27,19 +29,25 @@ export function useApiKey() {
 
   const saveApiKey = async (key: string) => {
     try {
+      console.log('Saving API key to storage...');
       await AsyncStorage.setItem(STORAGE_KEY, key);
       setApiKey(key);
+      console.log('API key saved successfully');
     } catch (error) {
       console.log('Error saving API key:', error);
+      throw error;
     }
   };
 
   const clearApiKey = async () => {
     try {
+      console.log('Clearing API key from storage...');
       await AsyncStorage.removeItem(STORAGE_KEY);
       setApiKey('');
+      console.log('API key cleared successfully');
     } catch (error) {
       console.log('Error clearing API key:', error);
+      throw error;
     }
   };
 

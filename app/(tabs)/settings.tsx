@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -23,17 +24,38 @@ import {
 } from '@/types/chat';
 
 export default function SettingsScreen() {
-  const { settings, saveSettings } = useCompanionSettings();
-  const { apiKey, saveApiKey } = useApiKey();
+  const { settings, saveSettings, loading: settingsLoading } = useCompanionSettings();
+  const { apiKey, saveApiKey, loading: apiKeyLoading } = useApiKey();
 
-  const [name, setName] = useState(settings.name);
-  const [gender, setGender] = useState(settings.gender);
-  const [personality, setPersonality] = useState(settings.personality);
-  const [avatar, setAvatar] = useState(settings.avatar);
-  const [apiKeyInput, setApiKeyInput] = useState(apiKey);
+  const [name, setName] = useState('');
+  const [gender, setGender] = useState<'male' | 'female' | 'neutral'>('neutral');
+  const [personality, setPersonality] = useState<Personality>('sweet');
+  const [avatar, setAvatar] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update local state when hooks finish loading
+  useEffect(() => {
+    if (!settingsLoading) {
+      console.log('Settings loaded, updating local state:', settings);
+      setName(settings.name);
+      setGender(settings.gender);
+      setPersonality(settings.personality);
+      setAvatar(settings.avatar);
+    }
+  }, [settingsLoading, settings]);
+
+  useEffect(() => {
+    if (!apiKeyLoading) {
+      console.log('API key loaded, updating local state:', apiKey ? 'Present' : 'Empty');
+      setApiKeyInput(apiKey);
+    }
+  }, [apiKeyLoading, apiKey]);
 
   const handleSave = async () => {
+    console.log('Save button pressed');
+    
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a name for your companion.');
       return;
@@ -48,17 +70,53 @@ export default function SettingsScreen() {
       return;
     }
 
-    await saveSettings({
-      name: name.trim(),
-      gender,
-      personality,
-      avatar,
-    });
+    setIsSaving(true);
 
-    await saveApiKey(apiKeyInput.trim());
+    try {
+      // Save companion settings
+      const newSettings = {
+        name: name.trim(),
+        gender,
+        personality,
+        avatar,
+      };
+      console.log('Saving settings:', newSettings);
+      await saveSettings(newSettings);
 
-    Alert.alert('Success', 'Settings saved successfully!', [{ text: 'OK' }]);
+      // Save API key
+      console.log('Saving API key');
+      await saveApiKey(apiKeyInput.trim());
+
+      Alert.alert('Success', 'Settings saved successfully!', [{ text: 'OK' }]);
+    } catch (error) {
+      console.log('Error saving settings:', error);
+      Alert.alert('Error', 'Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (settingsLoading || apiKeyLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Settings',
+            headerStyle: {
+              backgroundColor: colors.card,
+            },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading settings...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -72,8 +130,16 @@ export default function SettingsScreen() {
           headerTintColor: colors.text,
           headerShadowVisible: false,
           headerRight: () => (
-            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save</Text>
+            <TouchableOpacity 
+              onPress={handleSave} 
+              style={styles.saveButton}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.saveButtonText}>Save</Text>
+              )}
             </TouchableOpacity>
           ),
         }}
@@ -202,8 +268,16 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveButtonLarge} onPress={handleSave}>
-          <Text style={styles.saveButtonLargeText}>Save Settings</Text>
+        <TouchableOpacity 
+          style={[styles.saveButtonLarge, isSaving && styles.saveButtonLargeDisabled]} 
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.card} />
+          ) : (
+            <Text style={styles.saveButtonLargeText}>Save Settings</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
@@ -216,6 +290,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
@@ -393,6 +477,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
     elevation: 3,
+  },
+  saveButtonLargeDisabled: {
+    opacity: 0.6,
   },
   saveButtonLargeText: {
     fontSize: 18,

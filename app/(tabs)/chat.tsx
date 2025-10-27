@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
@@ -30,10 +31,10 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const { messages, addMessage, clearMessages } = useChatMessages();
-  const { settings } = useCompanionSettings();
-  const { generateResponse, loading } = useOpenAI();
-  const { apiKey } = useApiKey();
+  const { messages, addMessage, clearMessages, loading: messagesLoading } = useChatMessages();
+  const { settings, loading: settingsLoading } = useCompanionSettings();
+  const { generateResponse, loading: aiLoading, error: aiError } = useOpenAI();
+  const { apiKey, loading: apiKeyLoading } = useApiKey();
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -42,23 +43,39 @@ export default function ChatScreen() {
     }, 100);
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    // Log when API key is loaded
+    if (!apiKeyLoading) {
+      console.log('Chat screen - API key loaded:', apiKey ? 'Present' : 'Empty');
+    }
+  }, [apiKeyLoading, apiKey]);
+
   const handleSend = async () => {
-    if (!inputText.trim()) {
+    const trimmedInput = inputText.trim();
+    console.log('Send button pressed, input:', trimmedInput);
+    
+    if (!trimmedInput) {
+      console.log('Empty input, ignoring');
       return;
     }
 
     if (!apiKey) {
+      console.log('No API key found');
       Alert.alert(
         'API Key Required',
         'Please set your OpenAI API key in the Settings tab to use the chat feature.',
-        [{ text: 'OK' }]
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Settings', onPress: () => router.push('/(tabs)/settings') }
+        ]
       );
       return;
     }
 
+    console.log('Creating user message');
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText.trim(),
+      text: trimmedInput,
       sender: 'user',
       timestamp: new Date(),
     };
@@ -67,38 +84,51 @@ export default function ChatScreen() {
     setInputText('');
     setIsTyping(true);
 
-    // Build conversation history for context
-    const conversationHistory = messages.slice(-10).map((msg) => ({
-      role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
-      content: msg.text,
-    }));
+    try {
+      // Build conversation history for context
+      const conversationHistory = messages.slice(-10).map((msg) => ({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.text,
+      }));
 
-    const systemPrompt = PERSONALITY_SYSTEM_PROMPTS[settings.personality];
-    const fullPrompt = `${systemPrompt}\n\nYour name is ${settings.name}. Keep responses concise and engaging (2-3 sentences max). Show personality through your responses.`;
+      const systemPrompt = PERSONALITY_SYSTEM_PROMPTS[settings.personality];
+      const fullPrompt = `${systemPrompt}\n\nYour name is ${settings.name}. Keep responses concise and engaging (2-3 sentences max). Show personality through your responses.`;
 
-    const aiResponse = await generateResponse(
-      [
-        { role: 'system', content: fullPrompt },
-        ...conversationHistory,
-        { role: 'user', content: userMessage.text },
-      ],
-      apiKey
-    );
+      console.log('Generating AI response...');
+      const aiResponse = await generateResponse(
+        [
+          { role: 'system', content: fullPrompt },
+          ...conversationHistory,
+          { role: 'user', content: userMessage.text },
+        ],
+        apiKey
+      );
 
-    setIsTyping(false);
+      setIsTyping(false);
 
-    if (aiResponse) {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      addMessage(aiMessage);
-    } else {
+      if (aiResponse) {
+        console.log('AI response received, adding to messages');
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: aiResponse,
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+        addMessage(aiMessage);
+      } else {
+        console.log('No AI response received');
+        Alert.alert(
+          'Error',
+          aiError || 'Failed to get response from AI. Please check your API key and try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.log('Error in handleSend:', error);
+      setIsTyping(false);
       Alert.alert(
         'Error',
-        'Failed to get response from AI. Please check your API key and try again.',
+        'An unexpected error occurred. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -113,13 +143,17 @@ export default function ChatScreen() {
         {
           text: 'Clear',
           style: 'destructive',
-          onPress: clearMessages,
+          onPress: () => {
+            console.log('Clearing chat messages');
+            clearMessages();
+          },
         },
       ]
     );
   };
 
   const handleQuickAction = (action: string) => {
+    console.log('Quick action pressed:', action);
     let prompt = '';
     switch (action) {
       case 'date':
@@ -134,6 +168,28 @@ export default function ChatScreen() {
     }
     setInputText(prompt);
   };
+
+  if (messagesLoading || settingsLoading || apiKeyLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Chat',
+            headerStyle: {
+              backgroundColor: colors.card,
+            },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading chat...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -174,6 +230,21 @@ export default function ChatScreen() {
             <Text style={styles.emptySubtitle}>
               Your AI companion is here for emotional connection and conversation
             </Text>
+
+            {!apiKey && (
+              <View style={styles.apiKeyWarning}>
+                <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.highlight} />
+                <Text style={styles.apiKeyWarningText}>
+                  Please set your OpenAI API key in Settings to start chatting
+                </Text>
+                <TouchableOpacity 
+                  style={styles.goToSettingsButton}
+                  onPress={() => router.push('/(tabs)/settings')}
+                >
+                  <Text style={styles.goToSettingsButtonText}>Go to Settings</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <View style={styles.quickActionsContainer}>
               <Text style={styles.quickActionsTitle}>Quick Actions:</Text>
@@ -230,17 +301,22 @@ export default function ChatScreen() {
               placeholderTextColor={colors.textSecondary}
               multiline
               maxLength={500}
+              editable={!aiLoading && !isTyping}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
+              style={[styles.sendButton, (!inputText.trim() || aiLoading || isTyping) && styles.sendButtonDisabled]}
               onPress={handleSend}
-              disabled={!inputText.trim() || loading}
+              disabled={!inputText.trim() || aiLoading || isTyping}
             >
-              <IconSymbol
-                name="arrow.up.circle.fill"
-                size={32}
-                color={inputText.trim() && !loading ? colors.primary : colors.textSecondary}
-              />
+              {aiLoading || isTyping ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <IconSymbol
+                  name="arrow.up.circle.fill"
+                  size={32}
+                  color={inputText.trim() ? colors.primary : colors.textSecondary}
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -253,6 +329,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   keyboardView: {
     flex: 1,
@@ -290,7 +376,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
+  },
+  apiKeyWarning: {
+    backgroundColor: colors.highlight + '20',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.highlight + '40',
+  },
+  apiKeyWarningText: {
+    fontSize: 14,
+    color: colors.highlight,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  goToSettingsButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  goToSettingsButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.card,
   },
   quickActionsContainer: {
     width: '100%',
@@ -366,6 +479,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    width: 32,
+    height: 32,
   },
   sendButtonDisabled: {
     opacity: 0.5,

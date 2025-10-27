@@ -22,9 +22,12 @@ export function useCompanionSettings() {
 
   const loadSettings = async () => {
     try {
+      console.log('Loading companion settings from storage...');
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      console.log('Companion settings loaded:', stored ? 'Found' : 'Not found');
       if (stored) {
-        setSettings(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setSettings(parsed);
       }
     } catch (error) {
       console.log('Error loading companion settings:', error);
@@ -35,10 +38,13 @@ export function useCompanionSettings() {
 
   const saveSettings = async (newSettings: CompanionSettings) => {
     try {
+      console.log('Saving companion settings to storage...', newSettings);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
       setSettings(newSettings);
+      console.log('Companion settings saved successfully');
     } catch (error) {
       console.log('Error saving companion settings:', error);
+      throw error;
     }
   };
 

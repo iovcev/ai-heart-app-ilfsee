@@ -46,7 +46,7 @@ export default function TypingIndicator() {
         -1
       )
     );
-  }, []);
+  }, [dot1, dot2, dot3]);
 
   const dot1Style = useAnimatedStyle(() => ({
     opacity: 0.3 + dot1.value * 0.7,

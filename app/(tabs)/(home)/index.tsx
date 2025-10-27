@@ -6,12 +6,10 @@ import { Stack, router } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useCompanionSettings } from '@/hooks/useCompanionSettings';
-import { useApiKey } from '@/hooks/useApiKey';
 import { useChatMessages } from '@/hooks/useChatMessages';
 
 export default function HomeScreen() {
   const { settings } = useCompanionSettings();
-  const { apiKey } = useApiKey();
   const { messages } = useChatMessages();
 
   return (
@@ -38,43 +36,26 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {!apiKey ? (
-          <View style={styles.setupCard}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={48} color={colors.highlight} />
-            <Text style={styles.setupTitle}>Setup Required</Text>
-            <Text style={styles.setupDescription}>
-              You need to configure your OpenAI API key to start chatting with {settings.name}.
-            </Text>
-            <TouchableOpacity
-              style={styles.setupButton}
-              onPress={() => router.push('/(tabs)/settings')}
-            >
-              <IconSymbol name="gear" size={20} color={colors.card} />
-              <Text style={styles.setupButtonText}>Go to Settings</Text>
-            </TouchableOpacity>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <IconSymbol name="bubble.left.and.bubble.right.fill" size={32} color={colors.primary} />
+            <Text style={styles.statValue}>{messages.length}</Text>
+            <Text style={styles.statLabel}>Messages</Text>
           </View>
-        ) : (
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <IconSymbol name="bubble.left.and.bubble.right.fill" size={32} color={colors.primary} />
-              <Text style={styles.statValue}>{messages.length}</Text>
-              <Text style={styles.statLabel}>Messages</Text>
-            </View>
 
-            <View style={styles.statCard}>
-              <IconSymbol name="heart.fill" size={32} color={colors.secondary} />
-              <Text style={styles.statValue}>
-                {Math.floor(messages.length / 2)}
-              </Text>
-              <Text style={styles.statLabel}>Conversations</Text>
-            </View>
+          <View style={styles.statCard}>
+            <IconSymbol name="heart.fill" size={32} color={colors.secondary} />
+            <Text style={styles.statValue}>
+              {Math.floor(messages.length / 2)}
+            </Text>
+            <Text style={styles.statLabel}>Conversations</Text>
           </View>
-        )}
+        </View>
 
         <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={[styles.actionCard, !apiKey && styles.actionCardDisabled]}
-            onPress={() => apiKey ? router.push('/(tabs)/chat') : router.push('/(tabs)/settings')}
+            style={styles.actionCard}
+            onPress={() => router.push('/(tabs)/chat')}
           >
             <View style={styles.actionIcon}>
               <IconSymbol name="bubble.left.and.bubble.right.fill" size={28} color={colors.primary} />
@@ -82,7 +63,7 @@ export default function HomeScreen() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Start Chatting</Text>
               <Text style={styles.actionDescription}>
-                {apiKey ? `Talk with ${settings.name}` : 'Setup required'}
+                Talk with {settings.name}
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
@@ -171,45 +152,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  setupCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: colors.highlight + '40',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
-  },
-  setupTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  setupDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  setupButton: {
-    flexDirection: 'row',
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  setupButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.card,
-    marginLeft: 8,
-  },
   statsContainer: {
     flexDirection: 'row',
     gap: 12,
@@ -247,9 +189,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
-  },
-  actionCardDisabled: {
-    opacity: 0.6,
   },
   actionIcon: {
     width: 48,

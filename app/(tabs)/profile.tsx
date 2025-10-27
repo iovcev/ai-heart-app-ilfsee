@@ -12,30 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { useApiKey } from '@/hooks/useApiKey';
 import { useChatMessages } from '@/hooks/useChatMessages';
 
 export default function ProfileScreen() {
-  const { apiKey, clearApiKey } = useApiKey();
   const { messages, clearMessages } = useChatMessages();
-
-  const handleClearApiKey = () => {
-    Alert.alert(
-      'Clear API Key',
-      'Are you sure you want to remove your OpenAI API key? You will need to re-enter it to use the chat feature.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            await clearApiKey();
-            Alert.alert('Success', 'API key has been cleared.');
-          },
-        },
-      ]
-    );
-  };
 
   const handleClearAllData = () => {
     Alert.alert(
@@ -71,31 +51,6 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <IconSymbol name="key.fill" size={24} color={colors.primary} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>API Key Status</Text>
-                <Text style={styles.infoValue}>
-                  {apiKey ? 'Configured ✓' : 'Not Set'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('/(tabs)/settings')}
-          >
-            <IconSymbol name="gear" size={20} color={colors.primary} />
-            <Text style={styles.buttonText}>Manage API Key</Text>
-            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Statistics</Text>
           
           <View style={styles.card}>
@@ -110,18 +65,21 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push('/(tabs)/settings')}
+          >
+            <IconSymbol name="gear" size={20} color={colors.primary} />
+            <Text style={styles.buttonText}>Companion Settings</Text>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
           
-          {apiKey && (
-            <TouchableOpacity
-              style={[styles.button, styles.dangerButton]}
-              onPress={handleClearApiKey}
-            >
-              <IconSymbol name="key.slash.fill" size={20} color={colors.highlight} />
-              <Text style={[styles.buttonText, styles.dangerText]}>Clear API Key</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={[styles.button, styles.dangerButton]}
             onPress={handleClearAllData}
@@ -142,7 +100,7 @@ export default function ProfileScreen() {
               Version 1.0.0
             </Text>
             <Text style={styles.disclaimerText}>
-              This app uses OpenAI&apos;s API to generate responses. Your API key is stored locally on your device and is never shared with third parties.
+              This app uses OpenAI&apos;s API to generate responses. The API key is securely configured by the app developer.
             </Text>
           </View>
         </View>
@@ -181,24 +139,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 2,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoContent: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
   },
   statRow: {
     flexDirection: 'row',

@@ -16,7 +16,6 @@ import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useCompanionSettings } from '@/hooks/useCompanionSettings';
-import { useApiKey } from '@/hooks/useApiKey';
 import {
   Personality,
   PERSONALITY_DESCRIPTIONS,
@@ -27,14 +26,11 @@ import {
 
 export default function SettingsScreen() {
   const { settings, saveSettings, loading: settingsLoading } = useCompanionSettings();
-  const { apiKey, saveApiKey, loading: apiKeyLoading } = useApiKey();
 
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'neutral'>('neutral');
   const [personality, setPersonality] = useState<Personality>('sweet');
   const [avatar, setAvatar] = useState('');
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Update local state when hooks finish loading
@@ -47,13 +43,6 @@ export default function SettingsScreen() {
       setAvatar(settings.avatar);
     }
   }, [settingsLoading, settings]);
-
-  useEffect(() => {
-    if (!apiKeyLoading) {
-      console.log('API key loaded, updating local state:', apiKey ? 'Present' : 'Empty');
-      setApiKeyInput(apiKey);
-    }
-  }, [apiKeyLoading, apiKey]);
 
   // Update name when avatar changes (if avatar has a fixed name)
   useEffect(() => {
@@ -69,15 +58,6 @@ export default function SettingsScreen() {
     
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a name for your companion.');
-      return;
-    }
-
-    if (!apiKeyInput.trim()) {
-      Alert.alert(
-        'API Key Required',
-        'Please enter your OpenAI API key to use the chat feature. You can get one from platform.openai.com/api-keys',
-        [{ text: 'OK' }]
-      );
       return;
     }
 
@@ -97,10 +77,6 @@ export default function SettingsScreen() {
       console.log('Saving settings:', newSettings);
       await saveSettings(newSettings);
 
-      // Save API key
-      console.log('Saving API key');
-      await saveApiKey(apiKeyInput.trim());
-
       Alert.alert('Success', 'Settings saved successfully!', [{ text: 'OK' }]);
     } catch (error) {
       console.log('Error saving settings:', error);
@@ -112,7 +88,7 @@ export default function SettingsScreen() {
 
   const isNameEditable = !hasFixedName(avatar);
 
-  if (settingsLoading || apiKeyLoading) {
+  if (settingsLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen
@@ -162,43 +138,6 @@ export default function SettingsScreen() {
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>OpenAI API Key</Text>
-          <Text style={styles.sectionDescription}>
-            Required to use the chat feature. Get your API key from platform.openai.com/api-keys
-          </Text>
-          <View style={styles.apiKeyContainer}>
-            <TextInput
-              style={styles.apiKeyInput}
-              value={apiKeyInput}
-              onChangeText={setApiKeyInput}
-              placeholder="sk-..."
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry={!showApiKey}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowApiKey(!showApiKey)}
-            >
-              <IconSymbol
-                name={showApiKey ? 'eye.slash.fill' : 'eye.fill'}
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-          {!apiKeyInput && (
-            <View style={styles.warningBox}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={16} color={colors.highlight} />
-              <Text style={styles.warningText}>
-                API key is required to use the chat feature
-              </Text>
-            </View>
-          )}
-        </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Avatar</Text>
           <Text style={styles.sectionDescription}>
@@ -364,39 +303,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
-  },
-  apiKeyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  apiKeyInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-    paddingVertical: 12,
-  },
-  eyeButton: {
-    padding: 8,
-  },
-  warningBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.highlight + '20',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  warningText: {
-    fontSize: 14,
-    color: colors.highlight,
-    marginLeft: 8,
-    flex: 1,
   },
   infoBox: {
     flexDirection: 'row',

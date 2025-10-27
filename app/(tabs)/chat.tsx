@@ -20,7 +20,6 @@ import { colors } from '@/styles/commonStyles';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useCompanionSettings } from '@/hooks/useCompanionSettings';
 import { useOpenAI } from '@/hooks/useOpenAI';
-import { useApiKey } from '@/hooks/useApiKey';
 import MessageBubble from '@/components/MessageBubble';
 import TypingIndicator from '@/components/TypingIndicator';
 import { Message } from '@/types/chat';
@@ -35,7 +34,6 @@ export default function ChatScreen() {
   const { messages, addMessage, clearMessages, loading: messagesLoading } = useChatMessages();
   const { settings, loading: settingsLoading } = useCompanionSettings();
   const { generateResponse, loading: aiLoading, error: aiError } = useOpenAI();
-  const { apiKey, loading: apiKeyLoading } = useApiKey();
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -43,13 +41,6 @@ export default function ChatScreen() {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [messages, isTyping]);
-
-  useEffect(() => {
-    // Log when API key is loaded
-    if (!apiKeyLoading) {
-      console.log('Chat screen - API key loaded:', apiKey ? 'Present' : 'Empty');
-    }
-  }, [apiKeyLoading, apiKey]);
 
   const handleSend = async (textToSend?: string) => {
     const messageText = textToSend || inputText.trim();
@@ -62,19 +53,6 @@ export default function ChatScreen() {
 
     if (isSending) {
       console.log('Already sending a message, ignoring');
-      return;
-    }
-
-    if (!apiKey) {
-      console.log('No API key found');
-      Alert.alert(
-        'API Key Required',
-        'Please set your OpenAI API key in the Settings tab to use the chat feature.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Go to Settings', onPress: () => router.push('/(tabs)/settings') }
-        ]
-      );
       return;
     }
 
@@ -105,14 +83,11 @@ export default function ChatScreen() {
       const fullPrompt = `${systemPrompt}\n\nYour name is ${settings.name}. Keep responses concise and engaging (2-3 sentences max). Show personality through your responses.`;
 
       console.log('Generating AI response...');
-      const aiResponse = await generateResponse(
-        [
-          { role: 'system', content: fullPrompt },
-          ...conversationHistory,
-          { role: 'user', content: userMessage.text },
-        ],
-        apiKey
-      );
+      const aiResponse = await generateResponse([
+        { role: 'system', content: fullPrompt },
+        ...conversationHistory,
+        { role: 'user', content: userMessage.text },
+      ]);
 
       console.log('AI response received:', aiResponse ? 'Success' : 'Failed');
 
@@ -129,7 +104,7 @@ export default function ChatScreen() {
         console.log('No AI response received');
         Alert.alert(
           'Error',
-          aiError || 'Failed to get response from AI. Please check your API key and try again.',
+          aiError || 'Failed to get response from AI. Please try again.',
           [{ text: 'OK' }]
         );
       }
@@ -167,19 +142,6 @@ export default function ChatScreen() {
 
   const handleQuickAction = (action: string) => {
     console.log('Quick action pressed:', action);
-    
-    if (!apiKey) {
-      console.log('No API key found for quick action');
-      Alert.alert(
-        'API Key Required',
-        'Please set your OpenAI API key in the Settings tab to use quick actions.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Go to Settings', onPress: () => router.push('/(tabs)/settings') }
-        ]
-      );
-      return;
-    }
 
     if (isSending) {
       console.log('Already processing a message, ignoring quick action');
@@ -216,7 +178,7 @@ export default function ChatScreen() {
     }
   };
 
-  if (messagesLoading || settingsLoading || apiKeyLoading) {
+  if (messagesLoading || settingsLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen
@@ -282,43 +244,28 @@ export default function ChatScreen() {
               Your AI companion is here for emotional connection and conversation
             </Text>
 
-            {!apiKey && (
-              <View style={styles.apiKeyWarning}>
-                <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.highlight} />
-                <Text style={styles.apiKeyWarningText}>
-                  Please set your OpenAI API key in Settings to start chatting
-                </Text>
-                <TouchableOpacity 
-                  style={styles.goToSettingsButton}
-                  onPress={() => router.push('/(tabs)/settings')}
-                >
-                  <Text style={styles.goToSettingsButtonText}>Go to Settings</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
             <View style={styles.quickActionsContainer}>
               <Text style={styles.quickActionsTitle}>Quick Actions:</Text>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, isSending && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('date')}
-                disabled={isSending || !apiKey}
+                disabled={isSending}
               >
                 <IconSymbol name="heart.fill" size={20} color={colors.primary} />
                 <Text style={styles.quickActionText}>Date Idea</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, isSending && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('flirty')}
-                disabled={isSending || !apiKey}
+                disabled={isSending}
               >
                 <IconSymbol name="sparkles" size={20} color={colors.secondary} />
                 <Text style={styles.quickActionText}>Flirty Reply</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, isSending && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('feelings')}
-                disabled={isSending || !apiKey}
+                disabled={isSending}
               >
                 <IconSymbol name="bubble.left.and.bubble.right.fill" size={20} color={colors.accent} />
                 <Text style={styles.quickActionText}>Express Feelings</Text>
@@ -449,33 +396,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
-  },
-  apiKeyWarning: {
-    backgroundColor: colors.highlight + '20',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.highlight + '40',
-  },
-  apiKeyWarningText: {
-    fontSize: 14,
-    color: colors.highlight,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  goToSettingsButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  goToSettingsButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.card,
   },
   quickActionsContainer: {
     width: '100%',

@@ -13,17 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { DEFAULT_AVATARS } from '@/types/chat';
-import { useApiKey } from '@/hooks/useApiKey';
+import { useCompanionSettings } from '@/hooks/useCompanionSettings';
 
 export default function WelcomeScreen() {
-  const { apiKey, loading } = useApiKey();
+  const { settings, loading } = useCompanionSettings();
 
   useEffect(() => {
-    // If user already has API key configured, skip welcome screen
-    if (!loading && apiKey) {
+    // If user already has settings configured, skip welcome screen
+    if (!loading && settings.name) {
       router.replace('/(tabs)/(home)/');
     }
-  }, [apiKey, loading]);
+  }, [settings, loading]);
 
   if (loading) {
     return (
@@ -82,13 +82,6 @@ export default function WelcomeScreen() {
               Powered by advanced AI for engaging and contextual chats
             </Text>
           </View>
-        </View>
-
-        <View style={styles.infoBox}>
-          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
-          <Text style={styles.infoText}>
-            You&apos;ll need an OpenAI API key to use this app. Don&apos;t worry, we&apos;ll help you set it up!
-          </Text>
         </View>
 
         <TouchableOpacity
@@ -196,21 +189,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: colors.primary + '20',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: 'flex-start',
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    marginLeft: 12,
     lineHeight: 20,
   },
   getStartedButton: {

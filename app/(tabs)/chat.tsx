@@ -50,11 +50,11 @@ export default function ChatScreen() {
     }
   }, [apiKeyLoading, apiKey]);
 
-  const handleSend = async () => {
-    const trimmedInput = inputText.trim();
-    console.log('Send button pressed, input:', trimmedInput);
+  const handleSend = async (textToSend?: string) => {
+    const messageText = textToSend || inputText.trim();
+    console.log('Send button pressed, input:', messageText);
     
-    if (!trimmedInput) {
+    if (!messageText) {
       console.log('Empty input, ignoring');
       return;
     }
@@ -75,7 +75,7 @@ export default function ChatScreen() {
     console.log('Creating user message');
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: trimmedInput,
+      text: messageText,
       sender: 'user',
       timestamp: new Date(),
     };
@@ -152,8 +152,27 @@ export default function ChatScreen() {
     );
   };
 
-  const handleQuickAction = (action: string) => {
+  const handleQuickAction = async (action: string) => {
     console.log('Quick action pressed:', action);
+    
+    if (!apiKey) {
+      console.log('No API key found for quick action');
+      Alert.alert(
+        'API Key Required',
+        'Please set your OpenAI API key in the Settings tab to use quick actions.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Settings', onPress: () => router.push('/(tabs)/settings') }
+        ]
+      );
+      return;
+    }
+
+    if (isTyping || aiLoading) {
+      console.log('Already processing a message, ignoring quick action');
+      return;
+    }
+
     let prompt = '';
     switch (action) {
       case 'date':
@@ -166,7 +185,12 @@ export default function ChatScreen() {
         prompt = 'I want to express my feelings but I&apos;m not sure how';
         break;
     }
-    setInputText(prompt);
+    
+    if (prompt) {
+      console.log('Sending quick action prompt:', prompt);
+      // Send the message directly instead of just setting input text
+      await handleSend(prompt);
+    }
   };
 
   if (messagesLoading || settingsLoading || apiKeyLoading) {
@@ -249,22 +273,25 @@ export default function ChatScreen() {
             <View style={styles.quickActionsContainer}>
               <Text style={styles.quickActionsTitle}>Quick Actions:</Text>
               <TouchableOpacity
-                style={styles.quickActionButton}
+                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('date')}
+                disabled={isTyping || aiLoading || !apiKey}
               >
                 <IconSymbol name="heart.fill" size={20} color={colors.primary} />
                 <Text style={styles.quickActionText}>Date Idea</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickActionButton}
+                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('flirty')}
+                disabled={isTyping || aiLoading || !apiKey}
               >
                 <IconSymbol name="sparkles" size={20} color={colors.secondary} />
                 <Text style={styles.quickActionText}>Flirty Reply</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickActionButton}
+                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('feelings')}
+                disabled={isTyping || aiLoading || !apiKey}
               >
                 <IconSymbol name="bubble.left.and.bubble.right.fill" size={20} color={colors.accent} />
                 <Text style={styles.quickActionText}>Express Feelings</Text>
@@ -305,7 +332,7 @@ export default function ChatScreen() {
             />
             <TouchableOpacity
               style={[styles.sendButton, (!inputText.trim() || aiLoading || isTyping) && styles.sendButtonDisabled]}
-              onPress={handleSend}
+              onPress={() => handleSend()}
               disabled={!inputText.trim() || aiLoading || isTyping}
             >
               {aiLoading || isTyping ? (
@@ -425,6 +452,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+  },
+  quickActionButtonDisabled: {
+    opacity: 0.5,
   },
   quickActionText: {
     fontSize: 16,

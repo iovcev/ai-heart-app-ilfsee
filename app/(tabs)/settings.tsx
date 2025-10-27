@@ -217,7 +217,7 @@ export default function SettingsScreen() {
                 <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
                 {avatar === avatarUrl && (
                   <View style={styles.avatarCheckmark}>
-                    <IconSymbol name="checkmark" size={16} color={colors.card} />
+                    <IconSymbol name="checkmark" size={18} color={colors.card} />
                   </View>
                 )}
                 <View style={styles.avatarNameBadge}>
@@ -489,12 +489,12 @@ const styles = StyleSheet.create({
   avatarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
   avatarOption: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 3,
     borderColor: 'transparent',
     position: 'relative',
@@ -505,16 +505,16 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 50,
   },
   avatarCheckmark: {
     position: 'absolute',
     top: -4,
     right: -4,
     backgroundColor: colors.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -526,13 +526,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.primary,
-    paddingVertical: 2,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 10,
     alignItems: 'center',
   },
   avatarNameText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.card,
   },

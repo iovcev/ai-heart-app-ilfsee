@@ -209,7 +209,7 @@ export default function ChatScreen() {
   };
 
   const handleSendPress = () => {
-    console.log('Send button pressed, inputText:', inputText);
+    console.log('Send button/enter pressed, inputText:', inputText);
     console.log('isSending:', isSending);
     if (inputText.trim() && !isSending) {
       handleSend();
@@ -359,6 +359,7 @@ export default function ChatScreen() {
               returnKeyType="send"
               blurOnSubmit={false}
               onSubmitEditing={handleSendPress}
+              enablesReturnKeyAutomatically={true}
             />
             <TouchableOpacity
               style={styles.sendButton}

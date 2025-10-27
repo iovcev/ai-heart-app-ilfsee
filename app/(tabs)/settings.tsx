@@ -27,30 +27,37 @@ export default function SettingsScreen() {
   const { apiKey, saveApiKey } = useApiKey();
 
   const [name, setName] = useState(settings.name);
-  const [selectedGender, setSelectedGender] = useState(settings.gender);
-  const [selectedPersonality, setSelectedPersonality] = useState(settings.personality);
-  const [selectedAvatar, setSelectedAvatar] = useState(settings.avatar);
+  const [gender, setGender] = useState(settings.gender);
+  const [personality, setPersonality] = useState(settings.personality);
+  const [avatar, setAvatar] = useState(settings.avatar);
   const [apiKeyInput, setApiKeyInput] = useState(apiKey);
   const [showApiKey, setShowApiKey] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a name for your companion');
+      Alert.alert('Error', 'Please enter a name for your companion.');
       return;
     }
 
-    saveSettings({
-      name: name.trim(),
-      gender: selectedGender,
-      personality: selectedPersonality,
-      avatar: selectedAvatar,
-    });
-
-    if (apiKeyInput !== apiKey) {
-      saveApiKey(apiKeyInput);
+    if (!apiKeyInput.trim()) {
+      Alert.alert(
+        'API Key Required',
+        'Please enter your OpenAI API key to use the chat feature. You can get one from platform.openai.com/api-keys',
+        [{ text: 'OK' }]
+      );
+      return;
     }
 
-    Alert.alert('Success', 'Settings saved successfully!');
+    await saveSettings({
+      name: name.trim(),
+      gender,
+      personality,
+      avatar,
+    });
+
+    await saveApiKey(apiKeyInput.trim());
+
+    Alert.alert('Success', 'Settings saved successfully!', [{ text: 'OK' }]);
   };
 
   return (
@@ -58,120 +65,25 @@ export default function SettingsScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Companion Settings',
+          title: 'Settings',
           headerStyle: {
             backgroundColor: colors.card,
           },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerRight: () => (
+            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Avatar Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose Avatar</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.avatarList}
-          >
-            {DEFAULT_AVATARS.map((avatar, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setSelectedAvatar(avatar)}
-                style={[
-                  styles.avatarOption,
-                  selectedAvatar === avatar && styles.avatarOptionSelected,
-                ]}
-              >
-                <Image source={{ uri: avatar }} style={styles.avatarImage} />
-                {selectedAvatar === avatar && (
-                  <View style={styles.avatarCheck}>
-                    <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Name Input */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Companion Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter name..."
-            placeholderTextColor={colors.textSecondary}
-            maxLength={20}
-          />
-        </View>
-
-        {/* Gender Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gender</Text>
-          <View style={styles.optionsRow}>
-            {(['male', 'female', 'neutral'] as const).map((gender) => (
-              <TouchableOpacity
-                key={gender}
-                style={[
-                  styles.optionButton,
-                  selectedGender === gender && styles.optionButtonSelected,
-                ]}
-                onPress={() => setSelectedGender(gender)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    selectedGender === gender && styles.optionTextSelected,
-                  ]}
-                >
-                  {gender.charAt(0).toUpperCase() + gender.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Personality Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personality</Text>
-          {(['sweet', 'witty', 'deep', 'flirty'] as Personality[]).map((personality) => (
-            <TouchableOpacity
-              key={personality}
-              style={[
-                styles.personalityCard,
-                selectedPersonality === personality && styles.personalityCardSelected,
-              ]}
-              onPress={() => setSelectedPersonality(personality)}
-            >
-              <View style={styles.personalityHeader}>
-                <Text
-                  style={[
-                    styles.personalityTitle,
-                    selectedPersonality === personality && styles.personalityTitleSelected,
-                  ]}
-                >
-                  {personality.charAt(0).toUpperCase() + personality.slice(1)}
-                </Text>
-                {selectedPersonality === personality && (
-                  <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
-                )}
-              </View>
-              <Text style={styles.personalityDescription}>
-                {PERSONALITY_DESCRIPTIONS[personality]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* API Key Input */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>OpenAI API Key</Text>
-          <Text style={styles.sectionSubtitle}>
-            Required for chat functionality. Get your key from platform.openai.com
+          <Text style={styles.sectionDescription}>
+            Required to use the chat feature. Get your API key from platform.openai.com/api-keys
           </Text>
           <View style={styles.apiKeyContainer}>
             <TextInput
@@ -189,27 +101,112 @@ export default function SettingsScreen() {
               onPress={() => setShowApiKey(!showApiKey)}
             >
               <IconSymbol
-                name={showApiKey ? 'eye.slash' : 'eye'}
+                name={showApiKey ? 'eye.slash.fill' : 'eye.fill'}
                 size={20}
                 color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
+          {!apiKeyInput && (
+            <View style={styles.warningBox}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={16} color={colors.highlight} />
+              <Text style={styles.warningText}>
+                API key is required to use the chat feature
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Settings</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Companion Name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter companion name"
+            placeholderTextColor={colors.textSecondary}
+            maxLength={20}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Gender</Text>
+          <View style={styles.optionsRow}>
+            {(['male', 'female', 'neutral'] as const).map((g) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.optionButton, gender === g && styles.optionButtonActive]}
+                onPress={() => setGender(g)}
+              >
+                <Text
+                  style={[styles.optionText, gender === g && styles.optionTextActive]}
+                >
+                  {g.charAt(0).toUpperCase() + g.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Personality</Text>
+          {(['sweet', 'witty', 'deep', 'flirty'] as Personality[]).map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[
+                styles.personalityCard,
+                personality === p && styles.personalityCardActive,
+              ]}
+              onPress={() => setPersonality(p)}
+            >
+              <View style={styles.personalityContent}>
+                <Text
+                  style={[
+                    styles.personalityTitle,
+                    personality === p && styles.personalityTitleActive,
+                  ]}
+                >
+                  {PERSONALITY_DESCRIPTIONS[p].split(' - ')[0]}
+                </Text>
+                <Text style={styles.personalityDescription}>
+                  {PERSONALITY_DESCRIPTIONS[p].split(' - ')[1]}
+                </Text>
+              </View>
+              {personality === p && (
+                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Avatar</Text>
+          <View style={styles.avatarGrid}>
+            {DEFAULT_AVATARS.map((avatarUrl, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.avatarOption,
+                  avatar === avatarUrl && styles.avatarOptionActive,
+                ]}
+                onPress={() => setAvatar(avatarUrl)}
+              >
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                {avatar === avatarUrl && (
+                  <View style={styles.avatarCheckmark}>
+                    <IconSymbol name="checkmark" size={16} color={colors.card} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.saveButtonLarge} onPress={handleSave}>
+          <Text style={styles.saveButtonLargeText}>Save Settings</Text>
         </TouchableOpacity>
 
-        {/* Info Box */}
-        <View style={styles.infoBox}>
-          <IconSymbol name="info.circle" size={20} color={colors.primary} />
-          <Text style={styles.infoText}>
-            Your API key is stored securely on your device and never shared. All conversations are
-            private.
-          </Text>
-        </View>
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -224,8 +221,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 20,
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   section: {
     marginBottom: 32,
@@ -234,32 +240,139 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  sectionSubtitle: {
+  sectionDescription: {
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
   },
-  avatarList: {
+  apiKeyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  apiKeyInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    paddingVertical: 12,
+  },
+  eyeButton: {
+    padding: 8,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.highlight + '20',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  warningText: {
+    fontSize: 14,
+    color: colors.highlight,
+    marginLeft: 8,
+    flex: 1,
+  },
+  input: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  optionButton: {
+    flex: 1,
+    backgroundColor: colors.card,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  optionButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  optionTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  personalityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  personalityCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  personalityContent: {
+    flex: 1,
+  },
+  personalityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  personalityTitleActive: {
+    color: colors.primary,
+  },
+  personalityDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   avatarOption: {
-    position: 'relative',
-  },
-  avatarOptionSelected: {
-    borderWidth: 3,
-    borderColor: colors.primary,
-    borderRadius: 40,
-  },
-  avatarImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: 'transparent',
+    position: 'relative',
   },
-  avatarCheck: {
+  avatarOptionActive: {
+    borderColor: colors.primary,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+  },
+  avatarCheckmark: {
     position: 'absolute',
     bottom: 0,
     right: 0,
@@ -272,117 +385,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.card,
   },
-  textInput: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  optionButton: {
-    flex: 1,
-    backgroundColor: colors.card,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-  },
-  optionButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  optionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  optionTextSelected: {
-    color: '#FFFFFF',
-  },
-  personalityCard: {
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-  },
-  personalityCardSelected: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  personalityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  personalityTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  personalityTitleSelected: {
-    color: colors.primary,
-  },
-  personalityDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  apiKeyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-  },
-  apiKeyInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: colors.text,
-  },
-  eyeButton: {
-    padding: 12,
-  },
-  saveButton: {
+  saveButtonLarge: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 20,
-    boxShadow: '0px 2px 4px rgba(233, 30, 99, 0.3)',
+    marginTop: 8,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
     elevation: 3,
   },
-  saveButtonText: {
+  saveButtonLargeText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.card,
   },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
+  bottomSpacer: {
+    height: 100,
   },
 });

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,83 +8,109 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { DEFAULT_AVATARS } from '@/types/chat';
+import { useApiKey } from '@/hooks/useApiKey';
 
 export default function WelcomeScreen() {
+  const { apiKey, loading } = useApiKey();
+
+  useEffect(() => {
+    // If user already has API key configured, skip welcome screen
+    if (!loading && apiKey) {
+      router.replace('/(tabs)/(home)/');
+    }
+  }, [apiKey, loading]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome to AI Companion</Text>
-          <Text style={styles.subtitle}>
-            Your personal AI friend for emotional connection and conversation
-          </Text>
-        </View>
-
-        <View style={styles.avatarsContainer}>
           <View style={styles.avatarRow}>
             {DEFAULT_AVATARS.slice(0, 3).map((avatar, index) => (
-              <Image key={index} source={{ uri: avatar }} style={styles.avatar} />
+              <Image
+                key={index}
+                source={{ uri: avatar }}
+                style={[styles.headerAvatar, { marginLeft: index > 0 ? -20 : 0 }]}
+              />
             ))}
           </View>
-          <View style={styles.avatarRow}>
-            {DEFAULT_AVATARS.slice(3, 6).map((avatar, index) => (
-              <Image key={index} source={{ uri: avatar }} style={styles.avatar} />
-            ))}
-          </View>
+          <Text style={styles.title}>AI Companion</Text>
+          <Text style={styles.subtitle}>Your Emotional Connection Partner</Text>
         </View>
 
         <View style={styles.featuresContainer}>
-          <View style={styles.feature}>
-            <View style={[styles.featureIconContainer, { backgroundColor: colors.primary + '20' }]}>
+          <View style={styles.featureCard}>
+            <View style={styles.featureIcon}>
               <IconSymbol name="heart.fill" size={32} color={colors.primary} />
             </View>
-            <Text style={styles.featureTitle}>Emotional Support</Text>
-            <Text style={styles.featureText}>
-              Chat with an AI that understands and responds to your emotions
+            <Text style={styles.featureTitle}>Emotional Connection</Text>
+            <Text style={styles.featureDescription}>
+              Build meaningful connections through empathetic conversations
             </Text>
           </View>
 
-          <View style={styles.feature}>
-            <View style={[styles.featureIconContainer, { backgroundColor: colors.secondary + '20' }]}>
+          <View style={styles.featureCard}>
+            <View style={styles.featureIcon}>
               <IconSymbol name="sparkles" size={32} color={colors.secondary} />
             </View>
-            <Text style={styles.featureTitle}>Multiple Personalities</Text>
-            <Text style={styles.featureText}>
+            <Text style={styles.featureTitle}>Customizable Personality</Text>
+            <Text style={styles.featureDescription}>
               Choose from sweet, witty, deep, or flirty personalities
             </Text>
           </View>
 
-          <View style={styles.feature}>
-            <View style={[styles.featureIconContainer, { backgroundColor: colors.accent + '20' }]}>
-              <IconSymbol name="lock.fill" size={32} color={colors.accent} />
+          <View style={styles.featureCard}>
+            <View style={styles.featureIcon}>
+              <IconSymbol name="bubble.left.and.bubble.right.fill" size={32} color={colors.accent} />
             </View>
-            <Text style={styles.featureTitle}>Private & Secure</Text>
-            <Text style={styles.featureText}>
-              All conversations stay on your device. Your privacy is protected.
+            <Text style={styles.featureTitle}>Natural Conversations</Text>
+            <Text style={styles.featureDescription}>
+              Powered by advanced AI for engaging and contextual chats
             </Text>
           </View>
         </View>
 
-        <View style={styles.disclaimerBox}>
-          <IconSymbol name="exclamationmark.triangle" size={24} color={colors.highlight} />
-          <Text style={styles.disclaimerText}>
-            This is a fictional AI companion powered by OpenAI. It is not a real person and should
-            not replace professional mental health support.
+        <View style={styles.infoBox}>
+          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+          <Text style={styles.infoText}>
+            You&apos;ll need an OpenAI API key to use this app. Don&apos;t worry, we&apos;ll help you set it up!
           </Text>
         </View>
 
         <TouchableOpacity
           style={styles.getStartedButton}
+          onPress={() => router.replace('/(tabs)/settings')}
+        >
+          <Text style={styles.getStartedButtonText}>Get Started</Text>
+          <IconSymbol name="arrow.right" size={20} color={colors.card} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.skipButton}
           onPress={() => router.replace('/(tabs)/(home)/')}
         >
-          <Text style={styles.getStartedText}>Get Started</Text>
-          <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+          <Text style={styles.skipButtonText}>Skip for now</Text>
         </TouchableOpacity>
+
+        <View style={styles.disclaimerContainer}>
+          <Text style={styles.disclaimerText}>
+            ⚠️ This is a fictional AI companion, not a real person. All responses are generated by AI technology.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -95,101 +121,137 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: 24,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: colors.textSecondary,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  avatarsContainer: {
     alignItems: 'center',
     marginBottom: 40,
   },
   avatarRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    marginBottom: 24,
   },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: colors.accent,
+  headerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     borderWidth: 3,
     borderColor: colors.card,
+    backgroundColor: colors.accent,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   featuresContainer: {
     marginBottom: 32,
   },
-  feature: {
+  featureCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     alignItems: 'center',
-    marginBottom: 32,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
-  featureIconContainer: {
+  featureIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   featureTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
+    textAlign: 'center',
   },
-  featureText: {
+  featureDescription: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
-    paddingHorizontal: 20,
   },
-  disclaimerBox: {
+  infoBox: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
+    backgroundColor: colors.primary + '20',
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.highlight + '40',
+    alignItems: 'flex-start',
   },
-  disclaimerText: {
+  infoText: {
     flex: 1,
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
+    fontSize: 14,
+    color: colors.text,
+    marginLeft: 12,
+    lineHeight: 20,
   },
   getStartedButton: {
-    backgroundColor: colors.primary,
     flexDirection: 'row',
+    backgroundColor: colors.primary,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 12,
-    gap: 8,
+    marginBottom: 12,
     boxShadow: '0px 4px 12px rgba(233, 30, 99, 0.3)',
     elevation: 4,
   },
-  getStartedText: {
+  getStartedButtonText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.card,
+    marginRight: 8,
+  },
+  skipButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  disclaimerContainer: {
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

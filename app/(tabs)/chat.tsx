@@ -254,7 +254,7 @@ export default function ChatScreen() {
               onPress={() => router.push('/(tabs)/settings')}
               style={styles.headerButton}
             >
-              <Image source={{ uri: settings.avatar }} style={styles.avatar} />
+              <Image source={{ uri: settings.avatar }} style={styles.headerAvatar} />
             </TouchableOpacity>
           ),
           headerRight: () => (
@@ -339,7 +339,11 @@ export default function ChatScreen() {
             showsVerticalScrollIndicator={false}
           >
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble 
+                key={message.id} 
+                message={message}
+                avatar={message.sender === 'ai' ? settings.avatar : undefined}
+              />
             ))}
             {isTyping && <TypingIndicator />}
           </ScrollView>
@@ -410,10 +414,10 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 8,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.accent,
   },
   emptyScrollView: {

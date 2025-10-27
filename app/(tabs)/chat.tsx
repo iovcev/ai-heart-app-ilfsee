@@ -209,7 +209,8 @@ export default function ChatScreen() {
   };
 
   const handleSendPress = () => {
-    console.log('Send button pressed');
+    console.log('Send button pressed, inputText:', inputText);
+    console.log('isSending:', isSending);
     if (inputText.trim() && !isSending) {
       handleSend();
     }
@@ -360,18 +361,24 @@ export default function ChatScreen() {
               onSubmitEditing={handleSendPress}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
+              style={styles.sendButton}
               onPress={handleSendPress}
               disabled={!inputText.trim() || isSending}
+              activeOpacity={0.7}
             >
               {isSending ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <IconSymbol
-                  name="arrow.up.circle.fill"
-                  size={32}
-                  color={inputText.trim() ? colors.primary : colors.textSecondary}
-                />
+                <View style={[
+                  styles.sendButtonCircle,
+                  inputText.trim() ? styles.sendButtonActive : styles.sendButtonInactive
+                ]}>
+                  <IconSymbol
+                    name="arrow.up"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -546,10 +553,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  sendButtonCircle: {
     width: 32,
     height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sendButtonDisabled: {
-    opacity: 0.5,
+  sendButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  sendButtonInactive: {
+    backgroundColor: colors.textSecondary,
   },
 });

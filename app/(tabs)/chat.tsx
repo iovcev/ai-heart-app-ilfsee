@@ -29,6 +29,7 @@ import { PERSONALITY_SYSTEM_PROMPTS } from '@/types/chat';
 export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { messages, addMessage, clearMessages, loading: messagesLoading } = useChatMessages();
@@ -59,6 +60,11 @@ export default function ChatScreen() {
       return;
     }
 
+    if (isSending) {
+      console.log('Already sending a message, ignoring');
+      return;
+    }
+
     if (!apiKey) {
       console.log('No API key found');
       Alert.alert(
@@ -82,6 +88,7 @@ export default function ChatScreen() {
 
     addMessage(userMessage);
     setInputText('');
+    setIsSending(true);
     setIsTyping(true);
 
     try {
@@ -104,7 +111,7 @@ export default function ChatScreen() {
         apiKey
       );
 
-      setIsTyping(false);
+      console.log('AI response received:', aiResponse ? 'Success' : 'Failed');
 
       if (aiResponse) {
         console.log('AI response received, adding to messages');
@@ -125,12 +132,15 @@ export default function ChatScreen() {
       }
     } catch (error) {
       console.log('Error in handleSend:', error);
-      setIsTyping(false);
       Alert.alert(
         'Error',
         'An unexpected error occurred. Please try again.',
         [{ text: 'OK' }]
       );
+    } finally {
+      // Always reset states
+      setIsTyping(false);
+      setIsSending(false);
     }
   };
 
@@ -152,7 +162,7 @@ export default function ChatScreen() {
     );
   };
 
-  const handleQuickAction = async (action: string) => {
+  const handleQuickAction = (action: string) => {
     console.log('Quick action pressed:', action);
     
     if (!apiKey) {
@@ -168,7 +178,7 @@ export default function ChatScreen() {
       return;
     }
 
-    if (isTyping || aiLoading) {
+    if (isSending) {
       console.log('Already processing a message, ignoring quick action');
       return;
     }
@@ -184,12 +194,14 @@ export default function ChatScreen() {
       case 'feelings':
         prompt = 'I want to express my feelings but I&apos;m not sure how';
         break;
+      default:
+        console.log('Unknown quick action:', action);
+        return;
     }
     
     if (prompt) {
       console.log('Sending quick action prompt:', prompt);
-      // Send the message directly instead of just setting input text
-      await handleSend(prompt);
+      handleSend(prompt);
     }
   };
 
@@ -273,25 +285,25 @@ export default function ChatScreen() {
             <View style={styles.quickActionsContainer}>
               <Text style={styles.quickActionsTitle}>Quick Actions:</Text>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('date')}
-                disabled={isTyping || aiLoading || !apiKey}
+                disabled={isSending || !apiKey}
               >
                 <IconSymbol name="heart.fill" size={20} color={colors.primary} />
                 <Text style={styles.quickActionText}>Date Idea</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('flirty')}
-                disabled={isTyping || aiLoading || !apiKey}
+                disabled={isSending || !apiKey}
               >
                 <IconSymbol name="sparkles" size={20} color={colors.secondary} />
                 <Text style={styles.quickActionText}>Flirty Reply</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.quickActionButton, (isTyping || aiLoading) && styles.quickActionButtonDisabled]}
+                style={[styles.quickActionButton, (isSending) && styles.quickActionButtonDisabled]}
                 onPress={() => handleQuickAction('feelings')}
-                disabled={isTyping || aiLoading || !apiKey}
+                disabled={isSending || !apiKey}
               >
                 <IconSymbol name="bubble.left.and.bubble.right.fill" size={20} color={colors.accent} />
                 <Text style={styles.quickActionText}>Express Feelings</Text>
@@ -328,14 +340,19 @@ export default function ChatScreen() {
               placeholderTextColor={colors.textSecondary}
               multiline
               maxLength={500}
-              editable={!aiLoading && !isTyping}
+              editable={!isSending}
+              onSubmitEditing={() => {
+                if (inputText.trim() && !isSending) {
+                  handleSend();
+                }
+              }}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!inputText.trim() || aiLoading || isTyping) && styles.sendButtonDisabled]}
+              style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
               onPress={() => handleSend()}
-              disabled={!inputText.trim() || aiLoading || isTyping}
+              disabled={!inputText.trim() || isSending}
             >
-              {aiLoading || isTyping ? (
+              {isSending ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <IconSymbol

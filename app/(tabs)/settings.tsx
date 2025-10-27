@@ -21,6 +21,8 @@ import {
   Personality,
   PERSONALITY_DESCRIPTIONS,
   DEFAULT_AVATARS,
+  getAvatarName,
+  hasFixedName,
 } from '@/types/chat';
 
 export default function SettingsScreen() {
@@ -53,6 +55,15 @@ export default function SettingsScreen() {
     }
   }, [apiKeyLoading, apiKey]);
 
+  // Update name when avatar changes (if avatar has a fixed name)
+  useEffect(() => {
+    if (avatar && hasFixedName(avatar)) {
+      const fixedName = getAvatarName(avatar);
+      setName(fixedName);
+      console.log('Avatar changed to one with fixed name:', fixedName);
+    }
+  }, [avatar]);
+
   const handleSave = async () => {
     console.log('Save button pressed');
     
@@ -73,9 +84,12 @@ export default function SettingsScreen() {
     setIsSaving(true);
 
     try {
+      // Use fixed name if avatar has one
+      const finalName = hasFixedName(avatar) ? getAvatarName(avatar) : name.trim();
+      
       // Save companion settings
       const newSettings = {
-        name: name.trim(),
+        name: finalName,
         gender,
         personality,
         avatar,
@@ -95,6 +109,8 @@ export default function SettingsScreen() {
       setIsSaving(false);
     }
   };
+
+  const isNameEditable = !hasFixedName(avatar);
 
   if (settingsLoading || apiKeyLoading) {
     return (
@@ -184,14 +200,54 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Avatar</Text>
+          <Text style={styles.sectionDescription}>
+            Choose your AI companion&apos;s avatar
+          </Text>
+          <View style={styles.avatarGrid}>
+            {DEFAULT_AVATARS.map((avatarUrl, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.avatarOption,
+                  avatar === avatarUrl && styles.avatarOptionActive,
+                ]}
+                onPress={() => setAvatar(avatarUrl)}
+              >
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                {avatar === avatarUrl && (
+                  <View style={styles.avatarCheckmark}>
+                    <IconSymbol name="checkmark" size={16} color={colors.card} />
+                  </View>
+                )}
+                <View style={styles.avatarNameBadge}>
+                  <Text style={styles.avatarNameText} numberOfLines={1}>
+                    {getAvatarName(avatarUrl)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Companion Name</Text>
+          {!isNameEditable && (
+            <View style={styles.infoBox}>
+              <IconSymbol name="info.circle.fill" size={16} color={colors.primary} />
+              <Text style={styles.infoText}>
+                This avatar has a fixed name that cannot be changed
+              </Text>
+            </View>
+          )}
           <TextInput
-            style={styles.input}
+            style={[styles.input, !isNameEditable && styles.inputDisabled]}
             value={name}
             onChangeText={setName}
             placeholder="Enter companion name"
             placeholderTextColor={colors.textSecondary}
             maxLength={20}
+            editable={isNameEditable}
           />
         </View>
 
@@ -243,29 +299,6 @@ export default function SettingsScreen() {
               )}
             </TouchableOpacity>
           ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Avatar</Text>
-          <View style={styles.avatarGrid}>
-            {DEFAULT_AVATARS.map((avatarUrl, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.avatarOption,
-                  avatar === avatarUrl && styles.avatarOptionActive,
-                ]}
-                onPress={() => setAvatar(avatarUrl)}
-              >
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                {avatar === avatarUrl && (
-                  <View style={styles.avatarCheckmark}>
-                    <IconSymbol name="checkmark" size={16} color={colors.card} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
 
         <TouchableOpacity 
@@ -365,6 +398,20 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '20',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.primary,
+    marginLeft: 8,
+    flex: 1,
+  },
   input: {
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -374,6 +421,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+  },
+  inputDisabled: {
+    opacity: 0.6,
+    backgroundColor: colors.card + 'CC',
   },
   optionsRow: {
     flexDirection: 'row',
@@ -458,8 +509,8 @@ const styles = StyleSheet.create({
   },
   avatarCheckmark: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    top: -4,
+    right: -4,
     backgroundColor: colors.primary,
     width: 24,
     height: 24,
@@ -468,6 +519,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.card,
+  },
+  avatarNameBadge: {
+    position: 'absolute',
+    bottom: -8,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  avatarNameText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.card,
   },
   saveButtonLarge: {
     backgroundColor: colors.primary,

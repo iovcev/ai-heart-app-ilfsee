@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CompanionSettings, DEFAULT_AVATARS } from '@/types/chat';
+import { CompanionSettings, DEFAULT_AVATARS, getAvatarName } from '@/types/chat';
 
 const STORAGE_KEY = '@companion_settings';
 
 const DEFAULT_SETTINGS: CompanionSettings = {
-  name: 'Alex',
+  name: getAvatarName(DEFAULT_AVATARS[0]),
   gender: 'neutral',
   personality: 'sweet',
   avatar: DEFAULT_AVATARS[0],
@@ -27,7 +27,12 @@ export function useCompanionSettings() {
       console.log('Companion settings loaded:', stored ? 'Found' : 'Not found');
       if (stored) {
         const parsed = JSON.parse(stored);
-        setSettings(parsed);
+        // Ensure the name matches the avatar if it has a fixed name
+        const finalName = getAvatarName(parsed.avatar);
+        setSettings({
+          ...parsed,
+          name: finalName,
+        });
       }
     } catch (error) {
       console.log('Error loading companion settings:', error);
@@ -39,8 +44,13 @@ export function useCompanionSettings() {
   const saveSettings = async (newSettings: CompanionSettings) => {
     try {
       console.log('Saving companion settings to storage...', newSettings);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
-      setSettings(newSettings);
+      // Ensure the name matches the avatar if it has a fixed name
+      const finalSettings = {
+        ...newSettings,
+        name: getAvatarName(newSettings.avatar),
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(finalSettings));
+      setSettings(finalSettings);
       console.log('Companion settings saved successfully');
     } catch (error) {
       console.log('Error saving companion settings:', error);

@@ -518,12 +518,11 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flex: 1,
-    marginBottom: 80,
   },
   messagesContent: {
     paddingVertical: 16,
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 180,
   },
   inputContainer: {
     position: 'absolute',

@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { decode as base64Decode } from 'base-64';
 
 export type OpenAIMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -17,8 +18,8 @@ const _0x4a2b = [
 // Decodes the base64 encoded API key when needed
 function _0x3f8d(encoded: string): string {
   try {
-    // Base64 decode the encrypted key
-    const decoded = atob(encoded);
+    // Base64 decode the encrypted key using React Native compatible decoder
+    const decoded = base64Decode(encoded);
     return decoded;
   } catch (error) {
     console.log('Key decryption error:', error);
@@ -52,6 +53,8 @@ export function useOpenAI() {
         throw new Error('API configuration error. Please contact the app developer.');
       }
 
+      console.log('API key retrieved successfully');
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -84,7 +87,7 @@ export function useOpenAI() {
       }
 
       const data = await response.json();
-      console.log('OpenAI response received');
+      console.log('OpenAI response received successfully');
       
       const aiResponse = data.choices?.[0]?.message?.content;
 

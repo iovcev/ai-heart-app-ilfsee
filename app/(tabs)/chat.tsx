@@ -36,6 +36,12 @@ export default function ChatScreen() {
   const { generateResponse, loading: aiLoading, error: aiError } = useOpenAI();
 
   useEffect(() => {
+    console.log('Chat screen mounted');
+    console.log('Messages count:', messages.length);
+    console.log('Settings:', settings);
+  }, []);
+
+  useEffect(() => {
     // Scroll to bottom when messages change
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -44,7 +50,9 @@ export default function ChatScreen() {
 
   const handleSend = async (textToSend?: string) => {
     const messageText = textToSend || inputText.trim();
-    console.log('handleSend called with text:', messageText);
+    console.log('=== handleSend START ===');
+    console.log('Message text:', messageText);
+    console.log('isSending:', isSending);
     
     if (!messageText) {
       console.log('Empty input, ignoring');
@@ -69,6 +77,7 @@ export default function ChatScreen() {
     setIsSending(true);
     setIsTyping(true);
 
+    console.log('Adding user message to chat');
     // Add user message
     addMessage(userMessage);
 
@@ -82,17 +91,22 @@ export default function ChatScreen() {
       const systemPrompt = PERSONALITY_SYSTEM_PROMPTS[settings.personality];
       const fullPrompt = `${systemPrompt}\n\nYour name is ${settings.name}. Keep responses concise and engaging (2-3 sentences max). Show personality through your responses.`;
 
-      console.log('Generating AI response...');
+      console.log('Calling generateResponse...');
+      console.log('System prompt:', fullPrompt);
+      console.log('Conversation history length:', conversationHistory.length);
+      
       const aiResponse = await generateResponse([
         { role: 'system', content: fullPrompt },
         ...conversationHistory,
         { role: 'user', content: userMessage.text },
       ]);
 
-      console.log('AI response received:', aiResponse ? 'Success' : 'Failed');
+      console.log('generateResponse completed');
+      console.log('AI response:', aiResponse ? 'Received' : 'NULL');
+      console.log('AI error:', aiError);
 
       if (aiResponse) {
-        console.log('AI response received, adding to messages');
+        console.log('Adding AI response to messages');
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: aiResponse,
@@ -100,8 +114,9 @@ export default function ChatScreen() {
           timestamp: new Date(),
         };
         addMessage(aiMessage);
+        console.log('AI message added successfully');
       } else {
-        console.log('No AI response received');
+        console.log('No AI response received, showing error alert');
         Alert.alert(
           'Error',
           aiError || 'Failed to get response from AI. Please try again.',
@@ -117,8 +132,10 @@ export default function ChatScreen() {
       );
     } finally {
       // Always reset states
+      console.log('Resetting states');
       setIsTyping(false);
       setIsSending(false);
+      console.log('=== handleSend END ===');
     }
   };
 
@@ -171,10 +188,15 @@ export default function ChatScreen() {
   };
 
   const handleSendPress = () => {
-    console.log('Send button/enter pressed, inputText:', inputText);
+    console.log('Send button/enter pressed');
+    console.log('Input text:', inputText);
     console.log('isSending:', isSending);
+    
     if (inputText.trim() && !isSending) {
+      console.log('Calling handleSend');
       handleSend();
+    } else {
+      console.log('Not sending - conditions not met');
     }
   };
 

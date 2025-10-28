@@ -22,6 +22,7 @@ import {
   DEFAULT_AVATARS,
   getAvatarName,
   hasFixedName,
+  getAvatarGender,
 } from '@/types/chat';
 
 export default function SettingsScreen() {
@@ -44,12 +45,14 @@ export default function SettingsScreen() {
     }
   }, [settingsLoading, settings]);
 
-  // Update name when avatar changes (if avatar has a fixed name)
+  // Update name and gender when avatar changes (both are now hardcoded to avatar)
   useEffect(() => {
-    if (avatar && hasFixedName(avatar)) {
+    if (avatar) {
       const fixedName = getAvatarName(avatar);
+      const fixedGender = getAvatarGender(avatar);
       setName(fixedName);
-      console.log('Avatar changed to one with fixed name:', fixedName);
+      setGender(fixedGender);
+      console.log('Avatar changed - Name:', fixedName, 'Gender:', fixedGender);
     }
   }, [avatar]);
 
@@ -64,17 +67,18 @@ export default function SettingsScreen() {
     setIsSaving(true);
 
     try {
-      // Use fixed name if avatar has one
-      const finalName = hasFixedName(avatar) ? getAvatarName(avatar) : name.trim();
+      // Use fixed name and gender based on avatar (both hardcoded)
+      const finalName = getAvatarName(avatar);
+      const finalGender = getAvatarGender(avatar);
       
       // Save companion settings
       const newSettings = {
         name: finalName,
-        gender,
+        gender: finalGender,
         personality,
         avatar,
       };
-      console.log('Saving settings:', newSettings);
+      console.log('Saving settings with hardcoded gender:', newSettings);
       await saveSettings(newSettings);
 
       Alert.alert('Success', 'Settings saved successfully!', [{ text: 'OK' }]);
@@ -192,12 +196,22 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Gender</Text>
+          <View style={styles.infoBox}>
+            <IconSymbol name="info.circle.fill" size={16} color={colors.primary} />
+            <Text style={styles.infoText}>
+              Gender is automatically set based on the selected avatar
+            </Text>
+          </View>
           <View style={styles.optionsRow}>
             {(['male', 'female', 'neutral'] as const).map((g) => (
               <TouchableOpacity
                 key={g}
-                style={[styles.optionButton, gender === g && styles.optionButtonActive]}
-                onPress={() => setGender(g)}
+                style={[
+                  styles.optionButton, 
+                  gender === g && styles.optionButtonActive,
+                  styles.optionButtonDisabled
+                ]}
+                disabled={true}
               >
                 <Text
                   style={[styles.optionText, gender === g && styles.optionTextActive]}
@@ -350,6 +364,9 @@ const styles = StyleSheet.create({
   optionButtonActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primary + '10',
+  },
+  optionButtonDisabled: {
+    opacity: 0.6,
   },
   optionText: {
     fontSize: 16,

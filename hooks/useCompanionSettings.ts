@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CompanionSettings, DEFAULT_AVATARS, getAvatarName } from '@/types/chat';
+import { CompanionSettings, DEFAULT_AVATARS, getAvatarName, getAvatarGender } from '@/types/chat';
 
 const STORAGE_KEY = '@companion_settings';
 
 const DEFAULT_SETTINGS: CompanionSettings = {
   name: getAvatarName(DEFAULT_AVATARS[0]),
-  gender: 'neutral',
+  gender: getAvatarGender(DEFAULT_AVATARS[0]),
   personality: 'sweet',
   avatar: DEFAULT_AVATARS[0],
 };
@@ -27,11 +27,13 @@ export function useCompanionSettings() {
       console.log('Companion settings loaded:', stored ? 'Found' : 'Not found');
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Ensure the name matches the avatar if it has a fixed name
+        // Ensure the name and gender match the avatar
         const finalName = getAvatarName(parsed.avatar);
+        const finalGender = getAvatarGender(parsed.avatar);
         setSettings({
           ...parsed,
           name: finalName,
+          gender: finalGender,
         });
       }
     } catch (error) {
@@ -44,14 +46,15 @@ export function useCompanionSettings() {
   const saveSettings = async (newSettings: CompanionSettings) => {
     try {
       console.log('Saving companion settings to storage...', newSettings);
-      // Ensure the name matches the avatar if it has a fixed name
+      // Ensure the name and gender match the avatar (hardcoded)
       const finalSettings = {
         ...newSettings,
         name: getAvatarName(newSettings.avatar),
+        gender: getAvatarGender(newSettings.avatar),
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(finalSettings));
       setSettings(finalSettings);
-      console.log('Companion settings saved successfully');
+      console.log('Companion settings saved successfully with hardcoded gender:', finalSettings.gender);
     } catch (error) {
       console.log('Error saving companion settings:', error);
       throw error;
